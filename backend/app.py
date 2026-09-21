@@ -4,8 +4,8 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from backend.ml_engine import MLEngine, FEATURES
-from backend.risk_engine import HierarchicalRiskEngine
-from backend.blockchain import BlockchainLedger
+from backend.risk_engine import HierarchicalRisk
+from backend.blockchain import Ledger
 
 app=FastAPI(title="ML-Enhanced Blockchain Cloud Attack Detection API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
