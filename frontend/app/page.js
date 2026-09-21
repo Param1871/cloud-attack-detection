@@ -1,0 +1,24 @@
+'use client';
+import {useEffect,useState} from 'react';
+const API=process.env.NEXT_PUBLIC_API_URL||'http://localhost:8000';
+const fields=['traffic_anomaly','cpu_usage','memory_usage','bandwidth_usage','transaction_frequency','security_incidents','resource_distribution','avg_resource_usage','scalability_score','node_degree','centrality'];
+export default function Home(){
+ const [model,setModel]=useState(null),[ledger,setLedger]=useState(null),[sim,setSim]=useState(null),[busy,setBusy]=useState(false),[result,setResult]=useState(null);
+ const [form,setForm]=useState(Object.fromEntries(fields.map((f,i)=>[f,[.2,.2,.2,.2,.2,.1,.2,.2,.8,.2,.2][i]])));
+ async function load(){const [m,l]=await Promise.all([fetch(API+'/model').then(r=>r.json()),fetch(API+'/ledger').then(r=>r.json())]);setModel(m);setLedger(l)}
+ useEffect(()=>{load()},[]);
+ async function detect(e){e.preventDefault();setBusy(true);const r=await fetch(API+'/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,node_id:'dashboard-node',cluster:'C1'})});setResult(await r.json());setBusy(false);load()}
+ async function simulate(){setBusy(true);setSim(await fetch(API+'/simulate',{method:'POST'}).then(r=>r.json()));setBusy(false);load()}
+ const pct=v=>Math.round((v||0)*100);
+ return <main><header><div><span className="eyebrow">SECURITY OPERATIONS CENTER</span><h1>CloudSentinel <em>AI</em></h1><p>Machine Learning-Enhanced Blockchain-Based Cloud Attack Detection</p></div><div className="status"><span/> API ONLINE</div></header>
+ <section className="hero"><div><h2>Detect → Assess → Record</h2><p>Random Forest classifies cloud traffic. Hierarchical risk assessment aggregates evidence at node, cluster and global layers. Every decision is sealed into an append-only ledger.</p></div><button onClick={simulate} disabled={busy}>{busy?'RUNNING…':'RUN ATTACK SIMULATION'}</button></section>
+ <section className="grid cards"><Card label="MODEL ACCURACY" value={model?pct(model.metrics.accuracy)+'%':'—'} note="Random Forest"/><Card label="LEDGER INTEGRITY" value={ledger?.valid?'VALID':'CHECK'} note={ledger?ledger.blocks.length+' blocks':'—'}/><Card label="GLOBAL RISK" value={sim?sim.global.level:'—'} note={sim?'score '+pct(sim.global.risk)+'%':'Run simulation'}/><Card label="FEATURES" value={model?.features?.length||'—'} note="normalized signals"/></section>
+ <section className="panel"><div className="panelhead"><div><h3>Live Detection</h3><p>Submit normalized 0–1 cloud telemetry.</p></div>{result&&<div className={'badge '+result.risk.level.toLowerCase()}>{result.risk.level}</div>}</div>
+ <form onSubmit={detect}><div className="features">{fields.map(f=><label key={f}><span>{f.replaceAll('_',' ')}</span><input type="number" min="0" max="1" step="0.01" value={form[f]} onChange={e=>setForm({...form,[f]:Number(e.target.value)})}/></label>)}</div><button className="primary" disabled={busy}>{busy?'ANALYZING…':'ANALYZE TRAFFIC'}</button></form>
+ {result&&<div className="result"><div><small>PREDICTION</small><strong>{result.prediction}</strong><span>{pct(result.confidence)}% confidence</span></div><div><small>RISK SCORE</small><strong>{pct(result.risk.risk)}%</strong><span>belief {pct(result.risk.belief)}% · plausibility {pct(result.risk.plausibility)}%</span></div><div><small>BLOCK</small><strong>#{result.block.index}</strong><span className="hash">{result.block.hash.slice(0,18)}…</span></div></div>}
+ </section>
+ {sim&&<section className="panel"><div className="panelhead"><div><h3>Hierarchical Risk Assessment</h3><p>Node → Cluster → Global aggregation</p></div><div className={'badge '+sim.global.level.toLowerCase()}>{sim.global.level} · {pct(sim.global.risk)}%</div></div><div className="table"><div className="tr head"><span>NODE</span><span>CLUSTER</span><span>RISK</span><span>BELIEF</span><span>STATUS</span></div>{sim.nodes.map(n=><div className="tr" key={n.node_id}><span>{n.node_id}</span><span>{n.cluster}</span><span>{pct(n.risk)}%</span><span>{pct(n.belief)}%</span><span className={'dot '+n.level.toLowerCase()}>{n.level}</span></div>)}</div></section>}
+ <section className="panel"><div className="panelhead"><div><h3>Blockchain Audit Ledger</h3><p>Risk and detection events are chained by SHA-256 previous-hash links.</p></div><span className="badge neutral">{ledger?.blocks?.length||0} BLOCKS</span></div><div className="table">{ledger?.blocks?.slice(0,8).map(b=><div className="ledger" key={b.index}><span>#{b.index}</span><b>{b.event_type}</b><code>{b.hash.slice(0,24)}…</code></div>)}</div></section>
+ <footer>Prototype architecture aligned with the supplied hierarchical blockchain/cloud research reference. Replace synthetic training data with CIC-IDS2017/CIC-DDoS2019 or your approved dataset before reporting research results.</footer></main>
+}
+function Card({label,value,note}){return <div className="card"><small>{label}</small><strong>{value}</strong><span>{note}</span></div>}
